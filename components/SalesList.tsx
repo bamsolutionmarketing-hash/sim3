@@ -274,6 +274,18 @@ const SalesList: React.FC<Props> = ({ orders, inventoryStats, customers, getOrde
                   value={extensionReason}
                   onChange={(e) => setExtensionReason(e.target.value)}
                 />
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {['Khách chưa xoay kịp', 'Chờ đối soát', 'Lỗi ngân hàng', 'Khách quên', 'Hẹn sang tuần'].map(r => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setExtensionReason(prev => prev ? `${prev}, ${r}` : r)}
+                      className="px-3 py-1.5 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 rounded-xl text-[10px] font-bold text-slate-500 transition-all border border-slate-200 uppercase tracking-wide"
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="flex gap-4 pt-4 border-t border-slate-100">
