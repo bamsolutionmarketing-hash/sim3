@@ -260,32 +260,41 @@ export const useAppStore = () => {
     }
   };
 
-  const addTransaction = async (tx: Transaction) => {
-    setData(p => ({ ...p, transactions: [tx, ...p.transactions] }));
-    const { error } = await supabase.from('transactions').insert([{
-      id: tx.id,
-      code: tx.code,
-      date: tx.date,
-      type: tx.type,
-      category: tx.category,
-      amount: tx.amount,
-      method: tx.method,
-      sale_order_id: tx.saleOrderId,
-      note: tx.note
-    }]);
-    if (error) console.error('Error adding transaction:', error);
-  };
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const deleteTransaction = async (id: string) => {
-    setData(p => ({ ...p, transactions: p.transactions.filter(i => i.id !== id) }));
-    const { error } = await supabase.from('transactions').delete().eq('id', id);
-    if (error) console.error('Error deleting transaction:', error);
-  };
+  if (!user) {
+    console.error('Cannot add transaction: No user logged in');
+    return;
+  }
 
-  return {
-    ...data, fullData: data, importFullData, loading,
-    addPackage, deletePackage, addOrder, deleteOrder, updateOrderDueDate,
-    addTransaction, deleteTransaction, addSimType, deleteSimType,
-    addCustomer, updateCustomer, deleteCustomer
-  };
+  const newTransaction = { ...tx, user_id: user.id };
+  setData(p => ({ ...p, transactions: [newTransaction, ...p.transactions] }));
+
+  const { error } = await supabase.from('transactions').insert([{
+    id: tx.id,
+    code: tx.code,
+    date: tx.date,
+    type: tx.type,
+    category: tx.category,
+    amount: tx.amount,
+    method: tx.method,
+    sale_order_id: tx.saleOrderId,
+    user_id: user.id, // Add user_id manually
+    note: tx.note
+  }]);
+  if (error) console.error('Error adding transaction:', error);
+};
+
+const deleteTransaction = async (id: string) => {
+  setData(p => ({ ...p, transactions: p.transactions.filter(i => i.id !== id) }));
+  const { error } = await supabase.from('transactions').delete().eq('id', id);
+  if (error) console.error('Error deleting transaction:', error);
+};
+
+return {
+  ...data, fullData: data, importFullData, loading,
+  addPackage, deletePackage, addOrder, deleteOrder, updateOrderDueDate,
+  addTransaction, deleteTransaction, addSimType, deleteSimType,
+  addCustomer, updateCustomer, deleteCustomer
+};
 };
