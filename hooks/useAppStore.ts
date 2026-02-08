@@ -231,6 +231,33 @@ export const useAppStore = () => {
     }]);
 
     if (logError) console.error('Error adding due date log:', logError);
+
+    // Update Customer Tags if order has customerId (and reason exists)
+    const orderToUpdate = data.orders.find(o => o.id === orderId);
+    if (orderToUpdate && orderToUpdate.customerId && log.reason) {
+      const customer = data.customers.find(c => c.id === orderToUpdate.customerId);
+      if (customer) {
+        const currentTags = customer.tags || [];
+        // Avoid duplicate tags if exactly the same reason already exists? Or just append?
+        // User request: "Lưu lại lý do chậm trả dưới dạng thẻ từ lý do nhập vào".
+        // Let's split commas if user entered multiple, and trim.
+        const newTags = log.reason.split(',').map(t => t.trim()).filter(t => t);
+        const uniqueTags = Array.from(new Set([...currentTags, ...newTags]));
+
+        // Update local state
+        setData(p => ({
+          ...p,
+          customers: p.customers.map(c => c.id === customer.id ? { ...c, tags: uniqueTags } : c)
+        }));
+
+        // Update DB
+        const { error: tagError } = await supabase.from('customers').update({
+          tags: uniqueTags
+        }).eq('id', customer.id);
+
+        if (tagError) console.error('Error updating customer tags:', tagError);
+      }
+    }
   };
 
   const addTransaction = async (tx: Transaction) => {

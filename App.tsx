@@ -182,6 +182,7 @@ function App() {
             <Reports
               transactions={store.transactions}
               orders={orderStats}
+              customers={store.customers}
               onUpdateDueDate={store.updateOrderDueDate}
             />
           )}

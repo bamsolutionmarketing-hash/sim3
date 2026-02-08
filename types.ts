@@ -22,6 +22,7 @@ export interface Customer {
   email: string;
   address: string;
   type: 'WHOLESALE' | 'RETAIL';
+  tags?: string[];
   note: string;
 }
 

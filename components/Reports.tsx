@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState } from 'react';
-import { Transaction, SaleOrderWithStats, DueDateLog } from '../types';
+import { Transaction, SaleOrderWithStats, DueDateLog, Customer } from '../types';
 import { formatCurrency, formatDate, generateId } from '../utils';
 import { useAppStore } from '../hooks/useAppStore';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
@@ -12,10 +12,11 @@ import {
 interface Props {
   transactions: Transaction[];
   orders: SaleOrderWithStats[];
+  customers: Customer[]; // Added customers prop
   onUpdateDueDate: (orderId: string, newDate: string, log: DueDateLog) => void;
 }
 
-const Reports: React.FC<Props> = ({ transactions, orders, onUpdateDueDate }) => {
+const Reports: React.FC<Props> = ({ transactions, orders, customers, onUpdateDueDate }) => {
   const { dueDateLogs } = useAppStore();
   const [activeTab, setActiveTab] = useState<'CASHFLOW' | 'DEBT' | 'CALENDAR'>('CASHFLOW');
 
@@ -279,6 +280,22 @@ const Reports: React.FC<Props> = ({ transactions, orders, onUpdateDueDate }) => 
                     <span className="text-[10px] font-bold bg-slate-100 text-slate-400 px-3 py-1 rounded-xl border border-slate-200 uppercase tracking-widest">{order.code}</span>
                     {order.debtLevel === 'RECOVERY' && <span className="flex items-center gap-2 text-[10px] font-bold bg-red-600 text-white px-4 py-1.5 rounded-full animate-pulse shadow-xl shadow-red-200 uppercase tracking-widest"><Siren size={14} /> Thu hồi khẩn cấp</span>}
                   </div>
+                  {/* Display Customer Tags */}
+                  {(() => {
+                    const customer = customers.find(c => c.id === order.customerId);
+                    if (customer && customer.tags && customer.tags.length > 0) {
+                      return (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {customer.tags.map((tag, idx) => (
+                            <span key={idx} className="flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-bold uppercase tracking-wide border border-indigo-100">
+                              <Tag size={10} /> {tag}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                     {[
                       { label: 'Tổng đơn', value: formatCurrency(order.totalAmount), color: 'text-slate-600' },
