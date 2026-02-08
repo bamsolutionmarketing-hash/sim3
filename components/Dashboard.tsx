@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { InventoryProductStat, SaleOrderWithStats, Transaction, CustomerWithStats } from '../types';
 import { formatCurrency, formatDate } from '../utils';
 import { TrendingUp, TrendingDown, DollarSign, Package, Calendar, Filter, MessageCircle, AlertTriangle, ShieldAlert } from 'lucide-react';
@@ -37,7 +37,7 @@ const Dashboard: React.FC<Props> = ({ packages, orders, transactions, customers 
     });
   }, [transactions, startDate, endDate]);
 
-  const totalStock = packages.reduce((acc, p) => acc + p.currentStock, 0); 
+  const totalStock = packages.reduce((acc, p) => acc + p.currentStock, 0);
   const totalReceivables = filteredOrders.reduce((acc, o) => acc + o.remaining, 0);
   const totalIn = filteredTransactions.filter(t => t.type === 'IN').reduce((acc, t) => acc + t.amount, 0);
   const totalOut = filteredTransactions.filter(t => t.type === 'OUT').reduce((acc, t) => acc + t.amount, 0);
@@ -52,22 +52,22 @@ const Dashboard: React.FC<Props> = ({ packages, orders, transactions, customers 
   nextWeekStr.setDate(nextWeekStr.getDate() + 7);
   const nextWeekISO = nextWeekStr.toISOString().split('T')[0];
 
-  const weeklyDebtOrders = orders.filter(o => 
-    o.remaining > 0 && 
-    o.dueDate && 
+  const weeklyDebtOrders = orders.filter(o =>
+    o.remaining > 0 &&
+    o.dueDate &&
     o.dueDate <= nextWeekISO
   ).sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
 
   const zaloDebtMessage = useMemo(() => {
     const header = `📋 THÔNG BÁO THU HỒI NỢ TUẦN NÀY (${formatDate(todayStr)})\n----------------------------\n`;
-    const bodyText = weeklyDebtOrders.length > 0 
+    const bodyText = weeklyDebtOrders.length > 0
       ? weeklyDebtOrders.map(o => {
-          const cust = customers.find(c => c.id === o.customerId);
-          const statusIcon = o.debtLevel === 'RECOVERY' ? '🚨' : (o.debtLevel === 'WARNING' ? '⚠️' : (o.isOverdue ? '⏰' : '📅'));
-          return `${statusIcon} ${o.customerName} - ${cust?.phone || 'N/A'}\n💰 Nợ: ${formatCurrency(o.remaining)}\n📅 Hạn: ${formatDate(o.dueDate)}\n`;
-        }).join('\n')
+        const cust = customers.find(c => c.id === o.customerId);
+        const statusIcon = o.debtLevel === 'RECOVERY' ? '🚨' : (o.debtLevel === 'WARNING' ? '⚠️' : (o.isOverdue ? '⏰' : '📅'));
+        return `${statusIcon} ${o.customerName} - ${cust?.phone || 'N/A'}\n💰 Nợ: ${formatCurrency(o.remaining)}\n📅 Hạn: ${formatDate(o.dueDate)}\n`;
+      }).join('\n')
       : "✅ Không có nợ đến hạn trong tuần này.";
-    
+
     const footer = `\n----------------------------\n👉 Nhân viên phụ trách vui lòng kiểm tra và đôn đốc!`;
     return header + bodyText + footer;
   }, [weeklyDebtOrders, customers, todayStr]);
@@ -78,23 +78,40 @@ const Dashboard: React.FC<Props> = ({ packages, orders, transactions, customers 
   };
 
   const chartData = useMemo(() => {
-    const map = new Map<string, number>();
+    // Map to store { retail: 0, wholesale: 0 } for each date
+    const map = new Map<string, { retail: number; wholesale: number }>();
+
     if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
       const d = new Date(start);
       while (d <= end) {
-        map.set(d.toISOString().split('T')[0], 0);
+        map.set(d.toISOString().split('T')[0], { retail: 0, wholesale: 0 });
         d.setDate(d.getDate() + 1);
       }
     }
+
     filteredOrders.forEach(o => {
-      map.set(o.date, (map.get(o.date) || 0) + o.totalAmount);
+      const current = map.get(o.date) || { retail: 0, wholesale: 0 };
+      if (o.saleType === 'RETAIL') {
+        current.retail += o.totalAmount;
+      } else {
+        current.wholesale += o.totalAmount;
+      }
+      map.set(o.date, current);
     });
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([date, revenue]) => {
-      const d = new Date(date);
-      return { name: `${d.getDate()}/${d.getMonth() + 1}`, revenue };
-    });
+
+    return Array.from(map.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, data]) => {
+        const d = new Date(date);
+        return {
+          name: `${d.getDate()}/${d.getMonth() + 1}`,
+          retail: data.retail,
+          wholesale: data.wholesale,
+          total: data.retail + data.wholesale
+        };
+      });
   }, [filteredOrders, startDate, endDate]);
 
   const dateInputClass = "px-4 py-2 bg-white text-slate-950 border border-slate-300 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-600 outline-none shadow-sm transition-all";
@@ -109,8 +126,8 @@ const Dashboard: React.FC<Props> = ({ packages, orders, transactions, customers 
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Từ</span>
-            <input 
-              type="date" 
+            <input
+              type="date"
               className={dateInputClass}
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
@@ -118,8 +135,8 @@ const Dashboard: React.FC<Props> = ({ packages, orders, transactions, customers 
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Đến</span>
-            <input 
-              type="date" 
+            <input
+              type="date"
               className={dateInputClass}
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
@@ -158,14 +175,16 @@ const Dashboard: React.FC<Props> = ({ packages, orders, transactions, customers 
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11, fontWeight: 'bold'}} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} tickFormatter={(value) => `${value / 1000000}M`} />
-              <Tooltip 
-                cursor={{fill: '#f8fafc'}}
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 'bold' }} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={(value) => `${value / 1000000}M`} />
+              <Tooltip
+                cursor={{ fill: '#f8fafc' }}
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontFamily: 'Open Sans' }}
                 formatter={(v: any) => formatCurrency(v)}
               />
-              <Bar dataKey="revenue" fill="#4f46e5" radius={[8, 8, 0, 0]} barSize={45} />
+              <Legend iconType="circle" />
+              <Bar name="Bán Lẻ" dataKey="retail" fill="#4f46e5" radius={[4, 4, 0, 0]} barSize={20} />
+              <Bar name="Bán Sỉ" dataKey="wholesale" fill="#0ea5e9" radius={[4, 4, 0, 0]} barSize={20} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -194,7 +213,7 @@ const Dashboard: React.FC<Props> = ({ packages, orders, transactions, customers 
             </div>
           </div>
           <div className="mt-10 p-5 bg-indigo-50/50 rounded-3xl text-[11px] text-indigo-700 leading-relaxed font-bold italic border border-indigo-100">
-             Cập nhật lần cuối: {formatDate(todayStr)}.
+            Cập nhật lần cuối: {formatDate(todayStr)}.
           </div>
         </div>
 
@@ -207,7 +226,7 @@ const Dashboard: React.FC<Props> = ({ packages, orders, transactions, customers 
               </h3>
               <p className="text-[11px] font-semibold text-slate-400 uppercase mt-2">Tổng cộng {weeklyDebtOrders.length} khách nợ</p>
             </div>
-            <button 
+            <button
               onClick={handleCopyZalo}
               className="bg-[#0068ff] hover:bg-[#0051cc] text-white px-6 py-3 rounded-2xl flex items-center gap-2 text-[11px] font-bold shadow-xl shadow-blue-100 transition-all uppercase tracking-widest"
             >
