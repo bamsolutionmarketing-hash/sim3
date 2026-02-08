@@ -60,7 +60,8 @@ function App() {
       const total = order.quantity * order.salePrice;
       const profit = total - (order.quantity * (stats?.weightedAvgCost || 0));
       const paid = store.transactions.filter(t => t.saleOrderId === order.id && t.type === 'IN').reduce((s, t) => s + t.amount, 0);
-      const remaining = Math.max(0, total - paid);
+      // Fix: Floating point error may cause remaining > 0 even if paid. Round to nearest integer for VND.
+      const remaining = Math.max(0, Math.round(total - paid));
       const customer = store.customers.find(c => c.id === order.customerId);
       const latestLog = store.dueDateLogs
         .filter(l => l.orderId === order.id)
