@@ -62,6 +62,9 @@ function App() {
       const paid = store.transactions.filter(t => t.saleOrderId === order.id && t.type === 'IN').reduce((s, t) => s + t.amount, 0);
       const remaining = Math.max(0, total - paid);
       const customer = store.customers.find(c => c.id === order.customerId);
+      const latestLog = store.dueDateLogs
+        .filter(l => l.orderId === order.id)
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
 
       let debtLevel: 'NORMAL' | 'WARNING' | 'OVERDUE' | 'RECOVERY' = 'NORMAL';
       if (remaining > 0) {
@@ -80,7 +83,8 @@ function App() {
         remaining,
         isOverdue: debtLevel === 'OVERDUE' || debtLevel === 'RECOVERY',
         status: remaining <= 0 ? 'PAID' : (paid > 0 ? 'PARTIAL' : 'UNPAID'),
-        debtLevel
+        debtLevel,
+        latestReason: latestLog?.reason
       };
     });
   }, [store.orders, inventoryStats, store.transactions, store.customers]);

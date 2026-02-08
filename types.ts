@@ -92,6 +92,7 @@ export interface SaleOrderWithStats extends SaleOrder {
   status: 'PAID' | 'PARTIAL' | 'UNPAID';
   isOverdue: boolean;
   debtLevel: 'NORMAL' | 'WARNING' | 'OVERDUE' | 'RECOVERY';
+  latestReason?: string;
 }
 
 // Added ZaloConfig interface to fix import error in ZaloManager.tsx

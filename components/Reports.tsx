@@ -308,6 +308,12 @@ const Reports: React.FC<Props> = ({ transactions, orders, customers, onUpdateDue
                         <p className={`font-extrabold text-base ${item.color}`}>{item.value}</p>
                       </div>
                     ))}
+                    {order.latestReason && (
+                      <div className="bg-indigo-50/50 p-4 rounded-3xl border border-indigo-100 shadow-sm col-span-2 lg:col-span-4">
+                        <p className="text-[9px] font-bold text-indigo-400 uppercase mb-1.5 tracking-widest">Lý do gia hạn gần nhất</p>
+                        <p className="font-bold text-sm text-indigo-700">{order.latestReason}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex md:flex-col justify-center gap-4">
