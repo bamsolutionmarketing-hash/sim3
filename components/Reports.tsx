@@ -273,60 +273,63 @@ const Reports: React.FC<Props> = ({ transactions, orders, customers, onUpdateDue
             <div className="bg-white p-24 text-center rounded-[3rem] border border-dashed border-slate-300 text-slate-400 font-bold uppercase text-xs tracking-[0.2em] shadow-inner">Hiện tại không có khoản nợ nào.</div>
           ) : (
             debtOrders.map(order => (
-              <div key={order.id} className={`bg-white p-8 rounded-[3rem] border shadow-sm transition-all flex flex-col md:flex-row gap-8 ${order.debtLevel === 'RECOVERY' ? 'ring-2 ring-red-500 bg-red-50/20' : 'border-slate-100'}`}>
-                <div className="flex-1">
-                  <div className="flex items-center gap-4 mb-6">
-                    <h4 className="font-extrabold text-slate-800 text-xl tracking-tight uppercase">{order.customerName}</h4>
-                    <span className="text-[10px] font-bold bg-slate-100 text-slate-400 px-3 py-1 rounded-xl border border-slate-200 uppercase tracking-widest">{order.code}</span>
-                    {order.debtLevel === 'RECOVERY' && <span className="flex items-center gap-2 text-[10px] font-bold bg-red-600 text-white px-4 py-1.5 rounded-full animate-pulse shadow-xl shadow-red-200 uppercase tracking-widest"><Siren size={14} /> Thu hồi khẩn cấp</span>}
-                  </div>
-                  {/* Display Customer Tags */}
-                  {(() => {
-                    const customer = customers.find(c => c.id === order.customerId);
-                    if (customer && customer.tags && customer.tags.length > 0) {
-                      return (
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {customer.tags.map((tag, idx) => (
-                            <span key={idx} className="flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-bold uppercase tracking-wide border border-indigo-100">
-                              <Tag size={10} /> {tag}
-                            </span>
-                          ))}
+              debtOrders.map(order => (
+                <div key={order.id} className={`bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] border shadow-sm transition-all flex flex-col md:flex-row gap-6 md:gap-8 ${order.debtLevel === 'RECOVERY' ? 'ring-2 ring-red-500 bg-red-50/20' : 'border-slate-100'}`}>
+                  <div className="flex-1">
+                    <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
+                      <div className="flex items-center gap-3">
+                        <h4 className="font-extrabold text-slate-800 text-lg md:text-xl tracking-tight uppercase line-clamp-1">{order.customerName}</h4>
+                        <span className="text-[10px] font-bold bg-slate-100 text-slate-400 px-3 py-1 rounded-xl border border-slate-200 uppercase tracking-widest whitespace-nowrap">{order.code}</span>
+                      </div>
+                      {order.debtLevel === 'RECOVERY' && <span className="self-start md:self-auto flex items-center gap-2 text-[10px] font-bold bg-red-600 text-white px-4 py-1.5 rounded-full animate-pulse shadow-xl shadow-red-200 uppercase tracking-widest whitespace-nowrap"><Siren size={14} /> Thu hồi khẩn cấp</span>}
+                    </div>
+                    {/* Display Customer Tags */}
+                    {(() => {
+                      const customer = customers.find(c => c.id === order.customerId);
+                      if (customer && customer.tags && customer.tags.length > 0) {
+                        return (
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {customer.tags.map((tag, idx) => (
+                              <span key={idx} className="flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-bold uppercase tracking-wide border border-indigo-100">
+                                <Tag size={10} /> {tag}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                    <div className="grid grid-cols-2 gap-4 md:gap-5">
+                      {[
+                        { label: 'Tổng đơn', value: formatCurrency(order.totalAmount), color: 'text-slate-600' },
+                        { label: 'Dư nợ', value: formatCurrency(order.remaining), color: 'text-red-600' },
+                        { label: 'Ngày đến hạn', value: formatDate(order.dueDate), color: 'text-slate-800' },
+                        { label: 'Gia hạn', value: `${order.dueDateChanges} lần`, color: 'text-orange-600' }
+                      ].map((item, i) => (
+                        <div key={i} className="bg-white/60 p-4 rounded-3xl border border-slate-100 shadow-sm">
+                          <p className="text-[9px] font-bold text-slate-400 uppercase mb-1.5 tracking-widest">{item.label}</p>
+                          <p className={`font-extrabold text-base ${item.color}`}>{item.value}</p>
                         </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-                    {[
-                      { label: 'Tổng đơn', value: formatCurrency(order.totalAmount), color: 'text-slate-600' },
-                      { label: 'Dư nợ', value: formatCurrency(order.remaining), color: 'text-red-600' },
-                      { label: 'Ngày đến hạn', value: formatDate(order.dueDate), color: 'text-slate-800' },
-                      { label: 'Gia hạn', value: `${order.dueDateChanges} lần`, color: 'text-orange-600' }
-                    ].map((item, i) => (
-                      <div key={i} className="bg-white/60 p-4 rounded-3xl border border-slate-100 shadow-sm">
-                        <p className="text-[9px] font-bold text-slate-400 uppercase mb-1.5 tracking-widest">{item.label}</p>
-                        <p className={`font-extrabold text-base ${item.color}`}>{item.value}</p>
-                      </div>
-                    ))}
-                    {order.latestReason && (
-                      <div className="bg-indigo-50/50 p-4 rounded-3xl border border-indigo-100 shadow-sm col-span-2 lg:col-span-4">
-                        <p className="text-[9px] font-bold text-indigo-400 uppercase mb-1.5 tracking-widest">Lý do gia hạn gần nhất</p>
-                        <p className="font-bold text-sm text-indigo-700">{order.latestReason}</p>
-                      </div>
-                    )}
+                      ))}
+                      {order.latestReason && (
+                        <div className="bg-indigo-50/50 p-4 rounded-3xl border border-indigo-100 shadow-sm col-span-2 lg:col-span-4">
+                          <p className="text-[9px] font-bold text-indigo-400 uppercase mb-1.5 tracking-widest">Lý do gia hạn gần nhất</p>
+                          <p className="font-bold text-sm text-indigo-700">{order.latestReason}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex md:flex-col justify-center gap-4">
+                    <button onClick={() => { setSelectedOrder(order); setNewDueDate(order.dueDate); setIsModalOpen(true); }} className="flex-1 bg-indigo-50 text-indigo-700 px-8 py-4 rounded-3xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-indigo-100 transition-all border border-indigo-100 uppercase tracking-widest shadow-sm">
+                      <Edit size={16} /> Gia hạn nợ
+                    </button>
+                    <button className="flex-1 bg-red-600 text-white px-8 py-4 rounded-3xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-red-700 transition-all shadow-2xl shadow-red-100 uppercase tracking-widest">
+                      <MessageSquare size={16} /> Nhắc Zalo
+                    </button>
                   </div>
                 </div>
-                <div className="flex md:flex-col justify-center gap-4">
-                  <button onClick={() => { setSelectedOrder(order); setNewDueDate(order.dueDate); setIsModalOpen(true); }} className="flex-1 bg-indigo-50 text-indigo-700 px-8 py-4 rounded-3xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-indigo-100 transition-all border border-indigo-100 uppercase tracking-widest shadow-sm">
-                    <Edit size={16} /> Gia hạn nợ
-                  </button>
-                  <button className="flex-1 bg-red-600 text-white px-8 py-4 rounded-3xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-red-700 transition-all shadow-2xl shadow-red-100 uppercase tracking-widest">
-                    <MessageSquare size={16} /> Nhắc Zalo
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
         </div>
       )}
 

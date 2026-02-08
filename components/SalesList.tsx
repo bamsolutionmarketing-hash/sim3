@@ -109,60 +109,62 @@ const SalesList: React.FC<Props> = ({ orders, inventoryStats, customers, getOrde
         <button onClick={() => setActiveTab('RETAIL')} className={`pb-3 px-4 font-bold text-xs uppercase tracking-widest transition-all ${activeTab === 'RETAIL' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}>Bán Lẻ (Khách lẻ)</button>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-slate-50 text-slate-400 font-bold uppercase text-[9px] border-b border-slate-100 tracking-widest">
-            <tr>
-              <th className="px-6 py-4">Mã / Ngày</th>
-              <th className="px-6 py-4">Khách hàng</th>
-              <th className="px-6 py-4 text-right">Tổng tiền</th>
-              <th className="px-6 py-4 text-center">Trạng thái</th>
-              <th className="px-6 py-4 text-center w-20">Tác vụ</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {filteredOrders.length === 0 ? (
-              <tr><td colSpan={5} className="px-6 py-20 text-center text-slate-300 italic font-bold uppercase text-xs tracking-widest">Chưa có đơn hàng nào được ghi nhận.</td></tr>
-            ) : (
-              filteredOrders.map(o => (
-                <tr key={o.id} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-6 py-4">
-                    <p className="font-bold text-slate-800 tracking-tight">{o.code}</p>
-                    <p className="text-[10px] text-slate-400 font-medium uppercase">{formatDate(o.date)}</p>
-                  </td>
-                  <td className="px-6 py-4 font-bold text-slate-600">{o.customerName}</td>
-                  <td className="px-6 py-4 text-right font-extrabold text-slate-900 text-base">{formatCurrency(o.totalAmount)}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase border tracking-tight ${o.status === 'PAID' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>
-                      {o.status === 'PAID' ? 'Hoàn tất' : 'Còn nợ'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      {o.status !== 'PAID' && (
-                        <button
-                          onClick={() => {
-                            const originalOrder = orders.find(ord => ord.id === o.id);
-                            if (originalOrder) {
-                              setSelectedOrder(originalOrder);
-                              setNewDueDate(originalOrder.dueDate);
-                              setIsExtensionModalOpen(true);
-                            }
-                          }}
-                          className="text-slate-300 hover:text-indigo-600 transition-colors p-2"
-                          title="Gia hạn nợ"
-                        >
-                          <Calendar size={16} />
-                        </button>
-                      )}
-                      <button onClick={() => onDelete(o.id)} className="text-slate-300 hover:text-red-500 transition-colors p-2"><Trash2 size={16} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b border-slate-100 font-bold uppercase text-[9px] tracking-widest">
+              <tr>
+                <th className="px-6 py-4">Mã / Ngày</th>
+                <th className="px-6 py-4">Khách hàng</th>
+                <th className="px-6 py-4 text-right">Tổng tiền</th>
+                <th className="px-6 py-4 text-center">Trạng thái</th>
+                <th className="px-6 py-4 text-center w-20">Tác vụ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filteredOrders.length === 0 ? (
+                <tr><td colSpan={5} className="px-6 py-20 text-center text-slate-300 italic font-bold uppercase text-xs tracking-widest">Chưa có đơn hàng nào được ghi nhận.</td></tr>
+              ) : (
+                filteredOrders.map(o => (
+                  <tr key={o.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <p className="font-bold text-slate-800 tracking-tight">{o.code}</p>
+                      <p className="text-[10px] text-slate-400 font-medium uppercase">{formatDate(o.date)}</p>
+                    </td>
+                    <td className="px-6 py-4 font-bold text-slate-600">{o.customerName}</td>
+                    <td className="px-6 py-4 text-right font-extrabold text-slate-900 text-base">{formatCurrency(o.totalAmount)}</td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase border tracking-tight ${o.status === 'PAID' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>
+                        {o.status === 'PAID' ? 'Hoàn tất' : 'Còn nợ'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {o.status !== 'PAID' && (
+                          <button
+                            onClick={() => {
+                              const originalOrder = orders.find(ord => ord.id === o.id);
+                              if (originalOrder) {
+                                setSelectedOrder(originalOrder);
+                                setNewDueDate(originalOrder.dueDate);
+                                setIsExtensionModalOpen(true);
+                              }
+                            }}
+                            className="text-slate-300 hover:text-indigo-600 transition-colors p-2"
+                            title="Gia hạn nợ"
+                          >
+                            <Calendar size={16} />
+                          </button>
+                        )}
+                        <button onClick={() => onDelete(o.id)} className="text-slate-300 hover:text-red-500 transition-colors p-2"><Trash2 size={16} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {isModalOpen && (

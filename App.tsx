@@ -131,7 +131,23 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col md:flex-row font-sans text-slate-900">
-      <nav className="fixed bottom-0 left-0 right-0 md:top-0 md:w-64 md:h-screen bg-white border-t md:border-r border-slate-200 z-50 flex flex-col">
+      {/* Mobile Header */}
+      <div className="md:hidden bg-white p-4 flex items-center justify-between border-b border-slate-100">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+            <Database className="text-white" size={16} />
+          </div>
+          <span className="font-bold text-slate-800">SIM MANAGER</span>
+        </div>
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="p-2 bg-slate-50 rounded-lg text-slate-600 active:bg-slate-100"
+        >
+          <LayoutDashboard size={24} />
+        </button>
+      </div>
+
+      <nav className={`fixed bottom-0 left-0 right-0 md:top-0 md:w-64 md:h-screen bg-white border-t md:border-r border-slate-200 z-50 flex flex-col ${isMobileMenuOpen ? 'flex' : 'hidden md:flex'}`}>
         <div className="hidden md:flex items-center gap-3 p-6 border-b border-slate-100">
           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100">
             <Cpu className="text-white w-6 h-6" />
@@ -146,12 +162,12 @@ function App() {
               className={`flex flex-col md:flex-row items-center gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all ${activeTab === item.id ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-50 font-medium'}`}
             >
               <item.icon className="w-5 h-5" />
-              <span className="text-[10px] md:text-sm uppercase tracking-wide">{item.label}</span>
+              <span className="text-sm">{item.label}</span>
             </button>
           ))}
-        </div>
+        </nav>
 
-        <div className="hidden md:block p-4 border-t border-slate-100">
+        <div className="p-4 border-t border-slate-100">
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
@@ -243,7 +259,7 @@ function App() {
           )}
         </div>
       </main>
-    </div>
+    </div >
   );
 }
 
