@@ -98,11 +98,15 @@ export const useAppStore = () => {
   // --- Actions ---
 
   const addSimType = async (type: SimType) => {
-    // Optimistic update
-    setData(p => ({ ...p, simTypes: [type, ...p.simTypes] }));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setData(p => ({ ...p, simTypes: [...p.simTypes, type] }));
     const { error } = await supabase.from('sim_types').insert([{
       id: type.id,
-      name: type.name
+      name: type.name,
+      description: type.description,
+      user_id: user.id
     }]);
     if (error) console.error('Error adding sim type:', error);
   };
@@ -114,15 +118,20 @@ export const useAppStore = () => {
   };
 
   const addPackage = async (pkg: SimPackage) => {
-    setData(p => ({ ...p, packages: [pkg, ...p.packages] }));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setData(p => ({ ...p, packages: [...p.packages, pkg] }));
     const { error } = await supabase.from('sim_packages').insert([{
       id: pkg.id,
-      code: pkg.code,
-      name: pkg.name,
       sim_type_id: pkg.simTypeId,
-      import_date: pkg.importDate,
+      name: pkg.name,
       quantity: pkg.quantity,
-      total_import_price: pkg.totalImportPrice
+      import_price: pkg.importPrice,
+      total_import_price: pkg.totalImportPrice,
+      import_date: pkg.importDate,
+      note: pkg.note,
+      user_id: user.id
     }]);
     if (error) console.error('Error adding package:', error);
   };
@@ -133,17 +142,22 @@ export const useAppStore = () => {
     if (error) console.error('Error deleting package:', error);
   };
 
-  const addCustomer = async (c: Customer) => {
-    setData(p => ({ ...p, customers: [c, ...p.customers] }));
+  const addCustomer = async (customer: Customer) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setData(p => ({ ...p, customers: [...p.customers, customer] }));
     const { error } = await supabase.from('customers').insert([{
-      id: c.id,
-      cid: c.cid,
-      name: c.name,
-      phone: c.phone,
-      email: c.email,
-      address: c.address,
-      type: c.type,
-      note: c.note
+      id: customer.id,
+      cid: customer.cid,
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email,
+      address: customer.address,
+      type: customer.type,
+      tags: customer.tags,
+      note: customer.note,
+      user_id: user.id
     }]);
     if (error) console.error('Error adding customer:', error);
   };
@@ -169,21 +183,24 @@ export const useAppStore = () => {
   };
 
   const addOrder = async (order: SaleOrder) => {
-    setData(p => ({ ...p, orders: [order, ...p.orders] }));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setData(p => ({ ...p, orders: [...p.orders, order] }));
     const { error } = await supabase.from('sale_orders').insert([{
       id: order.id,
-      code: order.code,
-      date: order.date,
+      sale_type: order.saleType,
       customer_id: order.customerId,
       agent_name: order.agentName,
-      sale_type: order.saleType,
       sim_type_id: order.simTypeId,
       quantity: order.quantity,
       sale_price: order.salePrice,
-      due_date: order.dueDate || null,
+      total_amount: order.totalAmount,
+      sale_date: order.saleDate,
+      due_date: order.dueDate,
       due_date_changes: order.dueDateChanges,
-      note: order.note,
-      is_finished: order.isFinished
+      is_finished: order.isFinished,
+      user_id: user.id
     }]);
     if (error) console.error('Error adding order:', error);
   };
@@ -195,10 +212,12 @@ export const useAppStore = () => {
   };
 
   const updateOrderDueDate = async (orderId: string, newDate: string, log: DueDateLog) => {
-    setData(prev => ({
-      ...prev,
-      orders: prev.orders.map(o => o.id === orderId ? { ...o, dueDate: newDate, dueDateChanges: (o.dueDateChanges || 0) + 1 } : o),
-      dueDateLogs: [log, ...prev.dueDateLogs]
+    const { data: { user } } = await supabase.auth.getUser();
+
+    setData(p => ({
+      ...p,
+      orders: p.orders.map(o => o.id === orderId ? { ...o, dueDate: newDate, dueDateChanges: (o.dueDateChanges || 0) + 1 } : o),
+      dueDateLogs: [log, ...p.dueDateLogs]
     }));
 
     // We can't easily get the current due_date_changes without fetching, but for now we assume the frontend state is correct-ish or we use an RPC.
@@ -211,15 +230,14 @@ export const useAppStore = () => {
     // Actually, we can just update with the value we calculated locally.
 
     // Find the order to get the new change count
-    const order = data.orders.find(o => o.id === orderId);
-    const newChanges = (order?.dueDateChanges || 0) + 1;
-
-    const { error: orderError } = await supabase.from('sale_orders').update({
-      due_date: newDate,
-      due_date_changes: newChanges
-    }).eq('id', orderId);
-
-    if (orderError) console.error('Error updating order due date:', orderError);
+    const orderToUpdate = data.orders.find(o => o.id === orderId);
+    if (orderToUpdate) {
+      const { error: orderError } = await supabase.from('sale_orders').update({
+        due_date: newDate,
+        due_date_changes: (orderToUpdate.dueDateChanges || 0) + 1
+      }).eq('id', orderId);
+      if (orderError) console.error('Error updating order due date:', orderError);
+    }
 
     const { error: logError } = await supabase.from('due_date_logs').insert([{
       id: log.id,
@@ -227,12 +245,11 @@ export const useAppStore = () => {
       old_date: log.oldDate,
       new_date: log.newDate,
       reason: log.reason,
-      updated_at: log.updatedAt
+      updated_at: log.updatedAt,
+      user_id: user?.id
     }]);
-
     if (logError) console.error('Error adding due date log:', logError);
 
-    // Update Customer Tags if order has customerId (and reason exists)
     const orderToUpdate = data.orders.find(o => o.id === orderId);
     if (orderToUpdate && orderToUpdate.customerId && log.reason) {
       const customer = data.customers.find(c => c.id === orderToUpdate.customerId);
